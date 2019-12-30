@@ -127,9 +127,9 @@ macro_rules! print {
 
 #[macro_export]
 macro_rules! println {
-	() => (print!("\n"));
-	($fmt:expr) => (print!(concat!($fmt, "\n")));
-	($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
+	() => ($crate::print!("\n"));
+	($fmt:expr) => ($crate::print!(concat!($fmt, "\n")));
+	($fmt:expr, $($arg:tt)*) => ($crate::print!(concat!($fmt, "\n"), $($arg)*));
 }
 
 #[doc(hidden)]
@@ -144,4 +144,36 @@ lazy_static! {
 		color_code: ColorCode::new(Color::Yellow, Color::Black),
 		buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
 	});
+}
+
+#[cfg(test)]
+use crate::{serial_print, serial_println};
+
+#[test_case]
+fn test_println_simple() {
+	serial_print!("test_println... ");
+	println!("test_println_simple output");
+	serial_println!("[ok]");
+}
+
+#[test_case]
+fn test_println_many() {
+	serial_print!("test_println_many... ");
+	for _ in 0..200 {
+		println!("test_println_many output");
+	}
+	serial_println!("[ok]");
+}
+
+#[test_case]
+fn test_println_output() {
+	serial_print!("test_println_output... ");
+	let s = "some test string that fits on a single line";
+	println!("{}", s);
+	for (i, c) in s.chars().enumerate() {
+		let screen_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
+		assert_eq!(char::from(screen_char.ascii_character), c);
+	}
+
+	serial_println!("[ok]");
 }
